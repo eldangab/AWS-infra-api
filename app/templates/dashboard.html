@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Infrastructure Monitor - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #232f3e;
+            --secondary-color: #ff9900;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --error-color: #d13212;
+            --success-color: #2e7d32;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --card-bg: #fff;
+            --border-color: #eaeaea;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .navbar .logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar .logo i {
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        
+        .navbar h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-menu button {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            margin-left: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .user-menu button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+        
+        .sidebar {
+            width: 240px;
+            background-color: white;
+            border-right: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .sidebar a:hover, .sidebar a.active {
+            background-color: rgba(255, 153, 0, 0.1);
+            color: var(--secondary-color);
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .sidebar a i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-header h2 {
+            font-size: 1.75rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .dashboard-header p {
+            color: #6c757d;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--box-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-header h3 {
+            font-size: 1.1rem;
+            color: #495057;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+        }
+        
+        .s3-icon {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+        }
+        
+        .ecs-icon {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        
+        .ebs-icon {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+        
+        .security-icon {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-description {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        
+        .resource-table {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        
+        .resource-table h3 {
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            color: #495057;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .resource-table h3 i {
+            margin-right: 0.75rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: rgba(0, 0, 0, 0.02);
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.01);
+        }
+        
+        .status-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-available {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        
+        .status-in-use {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+        }
+        
+        .status-encrypted {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        
+        .status-not-encrypted {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 153, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--secondary-color);
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <i class="fas fa-cloud"></i>
+            <h1>AWS Infrastructure Monitor</h1>
+        </div>
+        <div class="user-menu">
+            <span id="user-region">Region: us-west-2</span>
+            <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <ul>
+                <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#" data-section="s3"><i class="fas fa-database"></i> S3 Buckets</a></li>
+                <li><a href="#" data-section="ecs"><i class="fas fa-cubes"></i> ECS Clusters</a></li>
+                <li><a href="#" data-section="ebs"><i class="fas fa-hdd"></i> EBS Volumes</a></li>
+                <li><a href="#" data-section="security"><i class="fas fa-shield-alt"></i> Security</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="dashboard-header">
+                <h2>Dashboard Overview</h2>
+                <p>Monitor and manage your AWS resources</p>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>S3 Buckets</h3>
+                        <div class="stat-icon s3-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="s3-count">-</div>
+                    <div class="stat-description">Total S3 Buckets</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>ECS Clusters</h3>
+                        <div class="stat-icon ecs-icon">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="ecs-count">-</div>
+                    <div class="stat-description">Total ECS Clusters</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>EBS Volumes</h3>
+                        <div class="stat-icon ebs-icon">
+                            <i class="fas fa-hdd"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="ebs-count">-</div>
+                    <div class="stat-description">Total EBS Volumes</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Security Status</h3>
+                        <div class="stat-icon security-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="security-score">-</div>
+                    <div class="stat-description">Resource Security Score</div>
+                </div>
+            </div>
+            
+            <div class="resource-table" id="s3-table">
+                <h3><i class="fas fa-database"></i> S3 Buckets</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bucket Name</th>
+                            <th>Region</th>
+                            <th>Encryption</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="s3-table-body">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div><i class="fas fa-spinner fa-spin"></i></div>
+                                <p>Loading S3 bucket data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="resource-table" id="ebs-table">
+                <h3><i class="fas fa-hdd"></i> EBS Volumes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Volume ID</th>
+                            <th>Size (GB)</th>
+                            <th>Type</th>
+                            <th>Encryption</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ebs-table-body">
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <div><i class="fas fa-spinner fa-spin"></i></div>
+                                <p>Loading EBS volume data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                window.location.href = '/';
+                return;
+            }
+            
+            // Get user region from token (placeholder)
+            const region = localStorage.getItem('userRegion') || 'us-west-2';
+            document.getElementById('user-region').textContent = `Region: ${region}`;
+            
+            // Logout functionality
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('tokenExpires');
+                window.location.href = '/';
+            });
+            
+            // Load dashboard data
+            loadDashboardData();
+            
+            // Navigation
+            document.querySelectorAll('.sidebar a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active state
+                    document.querySelectorAll('.sidebar a').forEach(l => {
+                        l.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Handle section display if needed
+                });
+            });
+            
+            // Load dashboard data
+            function loadDashboardData() {
+                fetchDashboardOverview();
+                fetchS3Buckets();
+                fetchEBSVolumes();
+            }
+            
+            // Fetch dashboard overview
+            function fetchDashboardOverview() {
+                fetch('/api/v1/dashboard/overview', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': authToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            // Token expired or invalid
+                            localStorage.removeItem('authToken');
+                            window.location.href = '/';
+                            throw new Error('Authentication failed');
+                        }
+                        throw new Error('Failed to fetch dashboard data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateDashboardStats(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching dashboard overview:', error);
+                });
+            }
+            
+            // Fetch S3 buckets
+            function fetchS3Buckets() {
+                fetch('/api/v1/s3/buckets', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': authToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch S3 buckets');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateS3Table(data.buckets);
+                })
+                .catch(error => {
+                    console.error('Error fetching S3 buckets:', error);
+                    document.getElementById('s3-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div><i class="fas fa-exclamation-circle"></i></div>
+                                <p>Error loading S3 bucket data</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            // Fetch EBS volumes
+            function fetchEBSVolumes() {
+                fetch('/api/v1/ebs/volumes', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': authToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch EBS volumes');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateEBSTable(data.volumes);
+                })
+                .catch(error => {
+                    console.error('Error fetching EBS volumes:', error);
+                    document.getElementById('ebs-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <div><i class="fas fa-exclamation-circle"></i></div>
+                                <p>Error loading EBS volume data</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            // Update dashboard stats
+            function updateDashboardStats(data) {
+                // Update S3 count
+                if (data.s3 && data.s3.total_buckets !== undefined) {
+                    document.getElementById('s3-count').textContent = data.s3.total_buckets;
+                }
+                
+                // Update ECS count
+                if (data.ecs && data.ecs.total_clusters !== undefined) {
+                    document.getElementById('ecs-count').textContent = data.ecs.total_clusters;
+                }
+                
+                // Update EBS count
+                if (data.ebs && data.ebs.total_volumes !== undefined) {
+                    document.getElementById('ebs-count').textContent = data.ebs.total_volumes;
+                }
+                
+                // Calculate security score (simplified example)
+                let securityScore = 0;
+                let totalResources = 0;
+                
+                if (data.s3 && data.s3.bucket_details) {
+                    data.s3.bucket_details.forEach(bucket => {
+                        if (bucket.encryption) {
+                            securityScore++;
+                        }
+                        totalResources++;
+                    });
+                }
+                
+                if (data.ebs && data.ebs.volume_details) {
+                    data.ebs.volume_details.forEach(volume => {
+                        if (volume.encrypted) {
+                            securityScore++;
+                        }
+                        totalResources++;
+                    });
+                }
+                
+                const scorePercentage = totalResources > 0 
+                    ? Math.round((securityScore / totalResources) * 100) 
+                    : 0;
+                
+                document.getElementById('security-score').textContent = `${scorePercentage}%`;
+            }
+            
+            // Update S3 table
+            function updateS3Table(buckets) {
+                const tableBody = document.getElementById('s3-table-body');
+                
+                if (!buckets || buckets.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div><i class="fas fa-database"></i></div>
+                                <p>No S3 buckets found</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                buckets.forEach(bucket => {
+                    const isEncrypted = typeof bucket === 'object' && bucket.encryption ? true : false;
+                    html += `
+                        <tr>
+                            <td>${bucket}</td>
+                            <td>${region}</td>
+                            <td>
+                                <span class="status-tag ${isEncrypted ? 'status-encrypted' : 'status-not-encrypted'}">
+                                    ${isEncrypted ? 'Encrypted' : 'Not Encrypted'}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-tag status-available">Available</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+            }
+            
+            // Update EBS table
+            function updateEBSTable(volumes) {
+                const tableBody = document.getElementById('ebs-table-body');
+                
+                if (!volumes || volumes.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <div><i class="fas fa-hdd"></i></div>
+                                <p>No EBS volumes found</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                volumes.forEach(volume => {
+                    html += `
+                        <tr>
+                            <td>${volume.volume_id}</td>
+                            <td>${volume.size}</td>
+                            <td>${volume.volume_type}</td>
+                            <td>
+                                <span class="status-tag ${volume.encrypted ? 'status-encrypted' : 'status-not-encrypted'}">
+                                    ${volume.encrypted ? 'Encrypted' : 'Not Encrypted'}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-tag status-${volume.state === 'in-use' ? 'in-use' : 'available'}">
+                                    ${volume.state}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableBody.innerHTML = html;
+            }
+        });
+    </script>
+</body>
+</html>
